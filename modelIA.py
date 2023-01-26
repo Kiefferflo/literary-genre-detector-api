@@ -17,6 +17,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
+import pandas
 
 
 #########################################################################################################################################
@@ -124,7 +125,21 @@ print(stem)
 ########################################################################################################################################
 ########################################################## Création BDD Autor ##########################################################
 ########################################################################################################################################
-
+def CreationBDDAutor (fichierSource: str) -> None:
+    """
+    Cette fonction permet de créer un fichier contenant les auteurs et leurs genres
+    
+    Parameters
+    ----------
+        fichierSource : str
+            nom du fichier source avec son chemin
+    
+    Returns
+    -------
+        None
+    """
+    
+    return ()
 
 ########################################################################################################################################
 ############################################################## Class Book ##############################################################
@@ -175,7 +190,7 @@ def predictWithTitle(title: str) -> str:
     return "Fiction"
 
 
-def predictWithAuthor(author: str) -> str:
+def predictWithAuthor(author: str, nameFile : str) -> str:
     """
     Cette fonction renvoie la prediction du genre littéraire en fonction d'un nom d'auteur
     
@@ -183,19 +198,35 @@ def predictWithAuthor(author: str) -> str:
     ----------
         author : str
             auteur
+        nameFile : str
+            nom du fichier contenant les auteurs et leurs genres
     
     Returns
     ------- 
-        genre : str
-            prediction du genre
+        listGenre : list
+            liste contenant les genres déjà écrit par l'auteur
     """
-    return "Fiction"
+    
+    listGenre : list = []
+    
+    lectureFichier = pandas.read_csv(nameFile, usecols=['Author', 'Genre'])
+    listAuthor = lectureFichier['Author']
+    listGenreSource = lectureFichier['Genre']
+    
+    for i in range (len(listAuthor)):
+        if (listAuthor[i] == author):
+            listGenre.append(listGenreSource[i])
+    
+    return (listGenre)
 
 
+"""
+## Test de predictAuthor
+author = 'Auteur 5'
+nomFichier = 'Données/Autor_generes.csv'
 
-
-
-
+print(predictWithAuthor(author,nomFichier))
+"""
 
 
 
