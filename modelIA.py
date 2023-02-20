@@ -18,13 +18,77 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 import pandas
+import csv
+import requests
+from bs4 import BeautifulSoup
+import random
 
 
-#########################################################################################################################################
-######################################################### Nettoyage des données #########################################################
-#########################################################################################################################################
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+import os
+import joblib
+import pickle
 
 
+
+
+
+########################################################################################################################################
+############################################################### Scraping ###############################################################
+########################################################################################################################################
+def scraping (nomFichier):
+    """
+    Cette fonction permet de rajouter l'auteur du roman dans le fichier source
+    
+    Parameters
+    ----------
+        nomFichier : str
+            Nom du fichier source
+    
+    Returns
+    -------
+        None
+            Changement directement dans le fichier source
+    """
+    lectureFichier = pandas.read_csv(nomFichier)
+    listBookName = lectureFichier['book_name']
+    
+    for i in range (len(listBookName)):
+        if (pandas.isna(lectureFichier.at[i, 'Author'])):
+            livre = listBookName[i]
+            livre = livre.replace(" ", "_")
+            titre = "https://en.wikipedia.org/wiki/" + livre
+        
+            r = requests.get(titre)
+            soup = BeautifulSoup(r.content, 'html.parser')
+        
+            author_section = soup.find('th', text='Author')
+            
+            if author_section:
+                # Récupérer la cellule de données suivante (td) qui contient l'auteur
+                author = author_section.find_next_sibling('td').text
+                print(i)
+                print(author)
+            else :
+                
+                author = ""
+                print(i)
+                print("Auteur non trouvé")
+                
+            lectureFichier.at[i, 'Author'] = author
+            lectureFichier.to_csv(nomFichier, index=False)
+        else :
+            print(i)
+            print("Auteur trouvé")
+            
+    return(None)
+
+
+'''
+scraping("Données/BooksDataSet.csv")
+'''
 ########################################################################################################################################
 ########################################################## Nettoyage du texte ##########################################################
 ########################################################################################################################################
@@ -79,7 +143,7 @@ def lematizing(summaryWithoutStopWord : str) -> str:
     return (lemSummary)
 
 
-def stemming(lemSummary):
+def stemming(lemSummary : str) -> str:
     """
     Cette fonction sert de stemming
     
@@ -106,9 +170,7 @@ def stemming(lemSummary):
     stemSummary = stemSentence.strip()
     return (stemSummary)
 
-
 """
-
 ## test de la partie nettoyage du texte ##
 
 
@@ -122,24 +184,141 @@ stem = stemming(sentence)
 print(stem)
 """
 
+
+def cleanData (fileName : str) -> None :
+    """
+    Cette fonction sert à créer un fichier identique au fichier source mais avec les titres et les résumés nettoyés
+    
+    Parameters
+    ----------
+    fileName : str
+            nom du fichier source avec son chemin
+
+    Returns
+    -------
+    None
+
+    """
+    
+    lectureFichier = pandas.read_csv(fileName)
+    listNameBook = lectureFichier['book_name']
+    listGenre = lectureFichier['genre']
+    listAuthor = lectureFichier['Author']
+    listSummary = lectureFichier['summary']
+    
+    listNameBook2 = []
+    listGenre2 = []
+    listAuthor2 = []
+    listSummary2 = []
+    
+    listBook = []
+    
+    for i in range (len (listNameBook)):
+        NameBookStopWords = removeStopWords(listNameBook[i])
+        NameBookLem = lematizing(NameBookStopWords)
+        NameBookStem = stemming(NameBookLem)
+
+        
+        SummaryStopWords = removeStopWords(listSummary[i])
+        SummaryLem = lematizing(SummaryStopWords)
+        SummaryStem = stemming(SummaryLem)
+        
+        ## Fantasy = 1
+        ## Science Fiction = 2
+        ## Crime Fiction = 3
+        ## Historical novel = 4
+        ## Horror = 5
+        ## Thriller = 6
+        
+        genre_mapping = {
+            'Fantasy': 1,
+            'Science Fiction': 2,
+            'Crime Fiction': 3,
+            'Historical novel': 4,
+            'Horror': 5,
+            'Thriller': 5
+        }
+        
+        genre = genre_mapping.get(listGenre[i], 0)
+
+        listBook.append([NameBookStem,genre,listAuthor[i],SummaryStem])
+    
+    with open('Données/BDD.csv', 'w') as f:
+      headers = ["NameBook","Genre","Author", "Summary"]
+      writer = csv.writer(f)
+      writer.writerow(headers)
+      writer.writerows(listBook)
+        
+    return()
+    
+'''
+
+## test de la partie création ##
+
+fileName = "Données/BooksDataSet.csv"
+
+cleanData(fileName)'''
+
+
 ########################################################################################################################################
 ########################################################## Création BDD Autor ##########################################################
 ########################################################################################################################################
-def CreationBDDAutor (fichierSource: str) -> None:
+def CreationBDDAutor (fileName: str) -> None:
     """
     Cette fonction permet de créer un fichier contenant les auteurs et leurs genres
     
     Parameters
     ----------
-        fichierSource : str
+        fileName : str
             nom du fichier source avec son chemin
     
     Returns
     -------
         None
     """
+
+    lectureFichier = pandas.read_csv(fileName)
+    listAuthor = lectureFichier['Author']
+    listAuthor2 = []
+    
+    listGenre = lectureFichier['genre']
+    listGenre2 = []
+    
+    listAuthorGenre = []
+    
+    
+    
+    for i in range (len(listAuthor)) :
+        auteur = (str(listAuthor[i]))
+        listAuthor2.append(auteur)
+        
+        genre = (str(listGenre[i]))
+        listGenre2.append(genre)
+        
+        authorGenre = [listAuthor2[i],listGenre2[i]]
+        
+        if (authorGenre not in listAuthorGenre) and (listAuthor2[i]!='nan') :
+            listAuthorGenre.append((listAuthor2[i],listGenre2[i]))
+     
+        
+    with open('Données/Author_generes.csv', 'w') as f:
+      headers = ["Author", "Genres"]
+      writer = csv.writer(f)
+      writer.writerow(headers)
+      writer.writerows(listAuthorGenre)
+        
+    
+    f.close()
     
     return ()
+
+
+"""
+## Test de la création de BDD
+
+fileName = "Données/BooksDataSet.csv"
+CreationBDDAutor(fileName)
+"""
 
 ########################################################################################################################################
 ############################################################## Class Book ##############################################################
@@ -153,7 +332,7 @@ class Book(BaseModel) :
 
 
 #########################################################################################################################################
-############################################################## Predictions ##############################################################
+########################################################## predictWithSummary ###########################################################
 #########################################################################################################################################
 def predictWithSummary(summary: str) -> str:
     """
@@ -172,8 +351,47 @@ def predictWithSummary(summary: str) -> str:
     
     return "Fiction"
 
+#########################################################################################################################################
+########################################################### predictWithTitle ############################################################
+#########################################################################################################################################
+def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
+    """
+    Cette fonction permet de créer un model d'arbre de décision 
+    
+    Parameters
+    ----------
+        fileName : str
+            nom du fichier source avec son chemin
+    
+    Returns
+    ------- 
+        None
+    """
+    
+    lectureFichier = pandas.read_csv(fileName, )
+    listNameBook = lectureFichier['book_name']
+    listGenre = lectureFichier['genre']
+    
+    listNameBook = tuple(listNameBook)
+    listGenre = tuple(listGenre)
+    
+    # Vectorisation des titres avec TfidfVectorizer
+    vectorizer = TfidfVectorizer()
+    train_features = vectorizer.fit_transform(listNameBook)
+    
+    # Création d'un classifieur RandomForest
+    clf = RandomForestClassifier(n_estimators=100)
+    
+    # Entraînement du classifieur
+    clf.fit(train_features, listGenre)
+    
+    joblib.dump(clf, "Model/predictWithTitle_TreeClassifier")
+    joblib.dump(vectorizer, "Model/vectorizer.joblib")
+    
+    return()
 
-def predictWithTitle(title: str) -> str:
+
+def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str :
     """
     Cette fonction renvoie la prediction du genre littéraire en fonction d'un titre
     
@@ -181,15 +399,43 @@ def predictWithTitle(title: str) -> str:
     ----------
         title : str
             titre
+        fileName : str
+            nom du fichier source avec son chemin
     
     Returns
     ------- 
         genre : str
             prediction du genre
     """
-    return "Fiction"
+
+    clf = joblib.load(fileName)
+        
+    # Vectorisation du titre à prédire
+    vectorizer = joblib.load('Model/vectorizer.joblib')
+    
+    book_feature = vectorizer.transform([title])
+
+    # Prédiction du genre du livre
+    predicted_genre = clf.predict(book_feature)
+
+    return(predicted_genre[0])
 
 
+
+book_title = 'The Kill Artist'
+
+fileName_Data = "Données/BooksDataSet.csv"
+fileName_Model = "Model/predictWithTitle_TreeClassifier"
+
+#predictWithTitle_TreeClassifier_Model(fileName_Data)
+prediction = predictWithTitle_TreeClassifier_Predict(fileName_Model,book_title)
+
+print("Pour le livre :", book_title,", le genre prédit est :", prediction)
+
+
+#########################################################################################################################################
+########################################################### predictWithAuthor ############################################################
+#########################################################################################################################################
 def predictWithAuthor(author: str, nameFile : str) -> str:
     """
     Cette fonction renvoie la prediction du genre littéraire en fonction d'un nom d'auteur
@@ -209,35 +455,24 @@ def predictWithAuthor(author: str, nameFile : str) -> str:
     
     listGenre : list = []
     
-    lectureFichier = pandas.read_csv(nameFile, usecols=['Author', 'Genre'])
+    lectureFichier = pandas.read_csv(nameFile, usecols=['Author', 'Genres'])
     listAuthor = lectureFichier['Author']
-    listGenreSource = lectureFichier['Genre']
+    listGenreSource = lectureFichier['Genres']
     
     for i in range (len(listAuthor)):
-        if (listAuthor[i] == author):
+        if (listAuthor[i] == author) and (listGenreSource[i] not in listGenre):
             listGenre.append(listGenreSource[i])
     
     return (listGenre)
 
-
 """
-## Test de predictAuthor
-author = 'Auteur 5'
-nomFichier = 'Données/Autor_generes.csv'
+## Test de predictWithAuthor
+author = 'Stephen King'
+nomFichier = 'Données/Author_generes.csv'
 
 print(predictWithAuthor(author,nomFichier))
+
 """
-
-
-
-
-
-
-
-
-
-
-
 
 
 
