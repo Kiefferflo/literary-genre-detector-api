@@ -6,6 +6,7 @@
 
 """
 
+
 ########################################################################################################################################
 ################################################################ Import ################################################################
 ########################################################################################################################################
@@ -22,10 +23,11 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 import random
-
+from matplotlib import pyplot as plt
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 import os
 import joblib
@@ -69,26 +71,27 @@ def scraping (nomFichier):
             if author_section:
                 # Récupérer la cellule de données suivante (td) qui contient l'auteur
                 author = author_section.find_next_sibling('td').text
-                print(i)
-                print(author)
             else :
-                
                 author = ""
-                print(i)
-                print("Auteur non trouvé")
+
                 
             lectureFichier.at[i, 'Author'] = author
             lectureFichier.to_csv(nomFichier, index=False)
-        else :
-            print(i)
-            print("Auteur trouvé")
             
     return(None)
 
 
-'''
+"""
+## Test pour le scrapping 
+
 scraping("Données/BooksDataSet.csv")
-'''
+
+"""
+
+
+
+
+
 ########################################################################################################################################
 ########################################################## Nettoyage du texte ##########################################################
 ########################################################################################################################################
@@ -170,9 +173,9 @@ def stemming(lemSummary : str) -> str:
     stemSummary = stemSentence.strip()
     return (stemSummary)
 
-"""
-## test de la partie nettoyage du texte ##
 
+"""
+## Test de la partie nettoyage du texte 
 
 summary = "The book tells the story of two friends embarking on an incredible adventure."
 print(summary)
@@ -182,6 +185,7 @@ sentence = lematizing(Stop)
 print(sentence)
 stem = stemming(sentence)
 print(stem)
+
 """
 
 
@@ -251,13 +255,17 @@ def cleanData (fileName : str) -> None :
         
     return()
     
-'''
-
+"""
 ## test de la partie création ##
 
 fileName = "Données/BooksDataSet.csv"
 
-cleanData(fileName)'''
+cleanData(fileName)
+
+"""
+
+
+
 
 
 ########################################################################################################################################
@@ -318,7 +326,12 @@ def CreationBDDAutor (fileName: str) -> None:
 
 fileName = "Données/BooksDataSet.csv"
 CreationBDDAutor(fileName)
+
 """
+
+
+
+
 
 ########################################################################################################################################
 ############################################################## Class Book ##############################################################
@@ -331,10 +344,13 @@ class Book(BaseModel) :
     identifiant : Optional[int] = None
 
 
+
+
+
 #########################################################################################################################################
 ########################################################## predictWithSummary ###########################################################
 #########################################################################################################################################
-def predictWithSummary(summary: str) -> str:
+def predictWithSummary_TreeClassifier_Model (fileName: str) -> str:
     """
     Cette fonction renvoie la prediction du genre littéraire en fonction d'un résumé
     
@@ -348,8 +364,139 @@ def predictWithSummary(summary: str) -> str:
         genre : str
             prediction du genre
     """
+
+    lectureFichier = pandas.read_csv(fileName)
+    lectureFichier = lectureFichier.sample(frac=1).reset_index(drop=True)
     
-    return "Fiction"
+    
+
+    listNameBook = lectureFichier['summary']
+    listGenre = lectureFichier['genre']
+    
+    tailleData = len(listNameBook)
+    tailleTrain = int((20*tailleData)/100)
+    
+    listNameBook_train = listNameBook[:tailleTrain]
+    listGenre_train = listGenre[:tailleTrain]
+    
+    listNameBook_test = listNameBook[tailleTrain:]
+    listGenre_test = listGenre[tailleTrain:]
+    
+    listNameBook_train = tuple(listNameBook_train)
+    listGenre_train = tuple(listGenre_train)
+    
+    listNameBook_test = tuple(listNameBook_test)
+    listGenre_test = tuple(listGenre_test)
+    
+    
+    
+    # Vectorisation des titres avec TfidfVectorizer
+    vectorizer = TfidfVectorizer()
+    train_features = vectorizer.fit_transform(listNameBook_train)
+    
+    # Création d'un classifieur RandomForest
+    clf = RandomForestClassifier(n_estimators=150,
+                                 criterion='gini',
+                                 max_depth=None,
+                                 min_samples_split=2,
+                                 min_samples_leaf=1,
+                                 min_weight_fraction_leaf=0.0,
+                                 max_features='auto',
+                                 max_leaf_nodes=None,
+                                 min_impurity_decrease=0.0,
+                                 bootstrap=True,
+                                 oob_score=False,
+                                 n_jobs=None,
+                                 random_state=None,
+                                 verbose=0,
+                                 warm_start=False,
+                                 class_weight=None,
+                                 ccp_alpha=0.0,
+                                 max_samples=None)
+    
+    # Entraînement du classifieur
+    clf.fit(train_features, listGenre_train)
+    
+    
+    nombreJuste = 0
+    nombreFaux = 0
+    predictionList = []
+    
+    for i in range (len(listNameBook_test)):
+        book_feature = vectorizer.transform([listNameBook_test[i]])
+
+        # Prédiction du genre du livre
+        predicted_genre = clf.predict(book_feature)
+        prediction = predicted_genre[0]
+        predictionList.append (prediction)
+        
+        if (prediction == listGenre_test[i]) :
+            nombreJuste = nombreJuste + 1
+        else :
+            nombreFaux = nombreFaux + 1
+        
+        
+    taux_Forest = ((nombreJuste)/(nombreJuste+nombreFaux))*100
+    mat_Forest = ConfusionMatrixDisplay(confusion_matrix(list(listGenre_test),predictionList,labels = ["Fantasy","Science Fiction","Crime Fiction","Historical novel","Horror","Thriller"]))
+    mat_Forest.plot()
+    plt.show()
+    print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
+    print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
+    
+    joblib.dump(clf, "Model/predictWithSummary_TreeClassifier")
+    joblib.dump(vectorizer, "Model/predictWithSummary_vectorizer.joblib")
+    
+    return()
+
+
+def predictWithsummary_TreeClassifier_Predict (fileName : str, title : str) -> str :
+    """
+    Cette fonction renvoie la prediction du genre littéraire en fonction d'un titre
+    
+    Parameters
+    ----------
+        title : str
+            titre
+        fileName : str
+            nom du fichier source avec son chemin
+    
+    Returns
+    ------- 
+        genre : str
+            prediction du genre
+    """
+
+    clf = joblib.load(fileName)
+        
+    # Vectorisation du titre à prédire
+    vectorizer = joblib.load('Model/predictWithSummary_vectorizer.joblib')
+    
+    book_feature = vectorizer.transform([title])
+
+    # Prédiction du genre du livre
+    predicted_genre = clf.predict(book_feature)
+
+    return(predicted_genre[0])
+
+
+"""
+## Test de la prediction avec summary
+
+fileName_Data = "Données/BooksDataSet.csv"
+fileName_Model = "Model/predictWithSummary_TreeClassifier"
+
+summary = "The book tells the story of two friends embarking on an incredible adventure."
+
+predictWithSummary_TreeClassifier_Model(fileName_Data)
+
+prediction = predictWithsummary_TreeClassifier_Predict(fileName_Model,summary)
+print(prediction)
+
+"""
+
+
+
+
 
 #########################################################################################################################################
 ########################################################### predictWithTitle ############################################################
@@ -368,25 +515,87 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
         None
     """
     
-    lectureFichier = pandas.read_csv(fileName, )
+    lectureFichier = pandas.read_csv(fileName)
+    lectureFichier = lectureFichier.sample(frac=1).reset_index(drop=True)
+    
+    
+
     listNameBook = lectureFichier['book_name']
     listGenre = lectureFichier['genre']
     
-    listNameBook = tuple(listNameBook)
-    listGenre = tuple(listGenre)
+    tailleData = len(listNameBook)
+    tailleTrain = int((20*tailleData)/100)
+    
+    listNameBook_train = listNameBook[:tailleTrain]
+    listGenre_train = listGenre[:tailleTrain]
+    
+    listNameBook_test = listNameBook[tailleTrain:]
+    listGenre_test = listGenre[tailleTrain:]
+    
+    listNameBook_train = tuple(listNameBook_train)
+    listGenre_train = tuple(listGenre_train)
+    
+    listNameBook_test = tuple(listNameBook_test)
+    listGenre_test = tuple(listGenre_test)
+    
+    
     
     # Vectorisation des titres avec TfidfVectorizer
     vectorizer = TfidfVectorizer()
-    train_features = vectorizer.fit_transform(listNameBook)
+    train_features = vectorizer.fit_transform(listNameBook_train)
     
     # Création d'un classifieur RandomForest
-    clf = RandomForestClassifier(n_estimators=100)
+    clf = RandomForestClassifier(n_estimators=150,
+                                 criterion='gini',
+                                 max_depth=None,
+                                 min_samples_split=2,
+                                 min_samples_leaf=1,
+                                 min_weight_fraction_leaf=0.0,
+                                 max_features='auto',
+                                 max_leaf_nodes=None,
+                                 min_impurity_decrease=0.0,
+                                 bootstrap=True,
+                                 oob_score=False,
+                                 n_jobs=None,
+                                 random_state=None,
+                                 verbose=0,
+                                 warm_start=False,
+                                 class_weight=None,
+                                 ccp_alpha=0.0,
+                                 max_samples=None)
     
     # Entraînement du classifieur
-    clf.fit(train_features, listGenre)
+    clf.fit(train_features, listGenre_train)
+    
+    
+    nombreJuste = 0
+    nombreFaux = 0
+    predictionList = []
+    
+    for i in range (len(listNameBook_test)):
+        book_feature = vectorizer.transform([listNameBook_test[i]])
+
+        # Prédiction du genre du livre
+        predicted_genre = clf.predict(book_feature)
+        prediction = predicted_genre[0]
+        predictionList.append (prediction)
+        
+        if (prediction == listGenre_test[i]) :
+            nombreJuste = nombreJuste + 1
+        else :
+            nombreFaux = nombreFaux + 1
+        
+        
+    taux_Forest = ((nombreJuste)/(nombreJuste+nombreFaux))*100
+    mat_Forest = ConfusionMatrixDisplay(confusion_matrix(list(listGenre_test),predictionList,labels = ["Fantasy","Science Fiction","Crime Fiction","Historical novel","Horror","Thriller"]))
+    mat_Forest.plot()
+    plt.show()
+    print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
+    print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
+    
     
     joblib.dump(clf, "Model/predictWithTitle_TreeClassifier")
-    joblib.dump(vectorizer, "Model/vectorizer.joblib")
+    joblib.dump(vectorizer, "Model/predictWithTitle_vectorizer.joblib")
     
     return()
 
@@ -411,7 +620,7 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('Model/vectorizer.joblib')
+    vectorizer = joblib.load('Model/predictWithTitle_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -421,22 +630,29 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     return(predicted_genre[0])
 
 
+"""
+## Test de la prediction avec le titre
 
 book_title = 'The Kill Artist'
 
 fileName_Data = "Données/BooksDataSet.csv"
 fileName_Model = "Model/predictWithTitle_TreeClassifier"
 
-#predictWithTitle_TreeClassifier_Model(fileName_Data)
+predictWithTitle_TreeClassifier_Model(fileName_Data)
 prediction = predictWithTitle_TreeClassifier_Predict(fileName_Model,book_title)
 
 print("Pour le livre :", book_title,", le genre prédit est :", prediction)
+
+"""
+
+
+
 
 
 #########################################################################################################################################
 ########################################################### predictWithAuthor ############################################################
 #########################################################################################################################################
-def predictWithAuthor(author: str, nameFile : str) -> str:
+def predictWithAuthor(author: str, nameFile : str) -> list:
     """
     Cette fonction renvoie la prediction du genre littéraire en fonction d'un nom d'auteur
     
@@ -467,37 +683,13 @@ def predictWithAuthor(author: str, nameFile : str) -> str:
 
 """
 ## Test de predictWithAuthor
+
 author = 'Stephen King'
 nomFichier = 'Données/Author_generes.csv'
 
 print(predictWithAuthor(author,nomFichier))
 
 """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
