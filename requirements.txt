@@ -1,6 +1,6 @@
 beautifulsoup4==4.11.2
 fastapi==0.92.0
-joblib==0.17.0
+joblib>=0.17.0
 matplotlib==3.3.2
 nltk==3.5
 pandas==1.5.2
