@@ -374,7 +374,7 @@ def predictWithSummary_TreeClassifier_Model (fileName: str) -> str:
     listGenre = lectureFichier['genre']
     
     tailleData = len(listNameBook)
-    tailleTrain = int((20*tailleData)/100)
+    tailleTrain = int((80*tailleData)/100)
     
     listNameBook_train = listNameBook[:tailleTrain]
     listGenre_train = listGenre[:tailleTrain]
@@ -479,7 +479,7 @@ def predictWithsummary_TreeClassifier_Predict (fileName : str, title : str) -> s
     return(predicted_genre[0])
 
 
-"""
+'''
 ## Test de la prediction avec summary
 
 fileName_Data = "Données/BooksDataSet.csv"
@@ -492,8 +492,7 @@ predictWithSummary_TreeClassifier_Model(fileName_Data)
 prediction = predictWithsummary_TreeClassifier_Predict(fileName_Model,summary)
 print(prediction)
 
-"""
-
+'''
 
 
 
@@ -524,7 +523,7 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
     listGenre = lectureFichier['genre']
     
     tailleData = len(listNameBook)
-    tailleTrain = int((20*tailleData)/100)
+    tailleTrain = int((80*tailleData)/100)
     
     listNameBook_train = listNameBook[:tailleTrain]
     listGenre_train = listGenre[:tailleTrain]
@@ -630,7 +629,7 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     return(predicted_genre[0])
 
 
-"""
+
 ## Test de la prediction avec le titre
 
 book_title = 'The Kill Artist'
@@ -643,7 +642,7 @@ prediction = predictWithTitle_TreeClassifier_Predict(fileName_Model,book_title)
 
 print("Pour le livre :", book_title,", le genre prédit est :", prediction)
 
-"""
+
 
 
 
