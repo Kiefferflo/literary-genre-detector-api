@@ -1,10 +1,9 @@
-pydantic==1.10.2
-typing-extensions==4.4.0
-nltk @ file:///tmp/build/80754af9/nltk_1592496090529/work
+beautifulsoup4==4.11.2
+fastapi==0.92.0
+joblib==0.17.0
+matplotlib==3.3.2
+nltk==3.5
 pandas==1.5.2
-requests @ file:///tmp/build/80754af9/requests_1592841827918/work
-beautifulsoup4 @ file:///tmp/build/80754af9/beautifulsoup4_1601924105527/work
-matplotlib @ file:///tmp/build/80754af9/matplotlib-base_1603378225747/work
-sklearn==0.0.post1
-joblib @ file:///tmp/build/80754af9/joblib_1601912903842/work
-
+pydantic==1.10.2
+requests==2.28.2
+scikit_learn==1.2.1
