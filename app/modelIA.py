@@ -309,7 +309,7 @@ def CreationBDDAutor (fileName: str) -> None:
             listAuthorGenre.append((listAuthor2[i],listGenre2[i]))
      
         
-    with open('Données/Author_generes.csv', 'w') as f:
+    with open('app/Données/Author_generes.csv', 'w') as f:
       headers = ["Author", "Genres"]
       writer = csv.writer(f)
       writer.writerow(headers)
@@ -443,8 +443,8 @@ def predictWithSummary_TreeClassifier_Model (fileName: str) -> str:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(clf, "Model/predictWithSummary_TreeClassifier")
-    joblib.dump(vectorizer, "Model/predictWithSummary_vectorizer.joblib")
+    joblib.dump(clf, "app/Model/predictWithSummary_TreeClassifier")
+    joblib.dump(vectorizer, "app/Model/predictWithSummary_vectorizer.joblib")
     
     return()
 
@@ -469,7 +469,7 @@ def predictWithsummary_TreeClassifier_Predict (fileName : str, title : str) -> s
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('Model/predictWithSummary_vectorizer.joblib')
+    vectorizer = joblib.load('app/Model/predictWithSummary_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -594,8 +594,8 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
     
-    joblib.dump(clf, "Model/predictWithTitle_TreeClassifier")
-    joblib.dump(vectorizer, "Model/predictWithTitle_vectorizer.joblib")
+    joblib.dump(clf, "app/Model/predictWithTitle_TreeClassifier")
+    joblib.dump(vectorizer, "app/Model/predictWithTitle_vectorizer.joblib")
     
     return()
 
@@ -620,7 +620,7 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('Model/predictWithTitle_vectorizer.joblib')
+    vectorizer = joblib.load('app/Model/predictWithTitle_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
