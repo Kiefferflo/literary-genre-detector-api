@@ -23,11 +23,14 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 import random
+import numpy as np
 from matplotlib import pyplot as plt
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 import os
 import joblib
@@ -469,7 +472,7 @@ def predictWithsummary_TreeClassifier_Predict (fileName : str, title : str) -> s
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('app/Model/predictWithSummary_vectorizer.joblib')
+    vectorizer = joblib.load('Model/predictWithSummary_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -487,12 +490,14 @@ fileName_Model = "Model/predictWithSummary_TreeClassifier"
 
 summary = "The book tells the story of two friends embarking on an incredible adventure."
 
-predictWithSummary_TreeClassifier_Model(fileName_Data)
+#predictWithSummary_TreeClassifier_Model(fileName_Data)
 
 prediction = predictWithsummary_TreeClassifier_Predict(fileName_Model,summary)
-print(prediction)
+
+print("Pour le résumé :", summary,", le genre prédit est :", prediction)
 
 """
+
 
 
 
@@ -620,7 +625,7 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('app/Model/predictWithTitle_vectorizer.joblib')
+    vectorizer = joblib.load('Model/predictWithTitle_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -638,7 +643,7 @@ book_title = 'The Kill Artist'
 fileName_Data = "Données/BooksDataSet.csv"
 fileName_Model = "Model/predictWithTitle_TreeClassifier"
 
-predictWithTitle_TreeClassifier_Model(fileName_Data)
+#predictWithTitle_TreeClassifier_Model(fileName_Data)
 prediction = predictWithTitle_TreeClassifier_Predict(fileName_Model,book_title)
 
 print("Pour le livre :", book_title,", le genre prédit est :", prediction)
@@ -650,7 +655,7 @@ print("Pour le livre :", book_title,", le genre prédit est :", prediction)
 
 
 #########################################################################################################################################
-########################################################### predictWithAuthor ############################################################
+########################################################### predictWithAuthor ###########################################################
 #########################################################################################################################################
 def predictWithAuthor(author: str, nameFile : str) -> list:
     """
@@ -692,5 +697,53 @@ print(predictWithAuthor(author,nomFichier))
 """
 
 
+#########################################################################################################################################
+########################################################### predictTitle ###########################################################
+#########################################################################################################################################
+def predictTitle(summary):
+    """
+    Cette fonction renvoie la prediction d'un titre en fonction de son résumé
+    
+    Parameters
+    ----------
+        summary : str
+            résumé
 
+    
+    Returns
+    ------- 
+        Title : str
+            prédiction du titre
+    """
+    data = pandas.read_csv('Données/BooksDataSet.csv')
+    
+    # Vectoriser les résumés de livres en utilisant la méthode TF-IDF
+    vectorizer = TfidfVectorizer(stop_words='english')
+    vectors = vectorizer.fit_transform(data['summary'])
+    
+    # Calculer les similarités cosinus entre les vecteurs de résumé de livre
+    cosine_similarities = cosine_similarity(vectors)
+        
+    # Vectoriser le résumé
+    summary_vector = vectorizer.transform([summary])
+    
+    # Calculer les similarités cosinus entre le résumé du livre donné et tous les autres résumés
+    similarity_scores = cosine_similarity(summary_vector, vectors)[0]
+    
+    # Trouver l'index de la livre le plus similaire
+    most_similar_book_index = np.argmax(similarity_scores)
+    
+    # Retourner le titre du livre le plus similaire
+    title = data.loc[most_similar_book_index]['book_name']
+    
+    return (title)
+
+
+
+## Test de predictTitle
+
+summary = "The story follows a man named Winston Smith, who works for the government and begins to rebel against its oppressive rule. As he becomes involved in a forbidden love affair and joins a secret resistance movement, Winston must navigate the dangerous world of surveillance and propaganda to fight for his freedom and individuality."
+predicted_title = predictTitle(summary)
+
+print("Le titre prédit est :",predicted_title)
 
