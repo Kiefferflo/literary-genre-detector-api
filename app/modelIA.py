@@ -31,6 +31,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics.pairwise import cosine_similarity
 
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.preprocessing.text import Tokenizer
+from keras.utils import to_categorical
+
 
 import os
 import joblib
@@ -377,7 +383,7 @@ def predictWithSummary_TreeClassifier_Model (fileName: str) -> str:
     listGenre = lectureFichier['genre']
     
     tailleData = len(listNameBook)
-    tailleTrain = int((20*tailleData)/100)
+    tailleTrain = int((80*tailleData)/100)
     
     listNameBook_train = listNameBook[:tailleTrain]
     listGenre_train = listGenre[:tailleTrain]
@@ -446,8 +452,8 @@ def predictWithSummary_TreeClassifier_Model (fileName: str) -> str:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(clf, "app/Model/predictWithSummary_TreeClassifier")
-    joblib.dump(vectorizer, "app/Model/predictWithSummary_vectorizer.joblib")
+    joblib.dump(clf, "Model/predictWithSummary_TreeClassifier")
+    joblib.dump(vectorizer, "Model/predictWithSummary_vectorizer.joblib")
     
     return()
 
@@ -495,10 +501,164 @@ summary = "The book tells the story of two friends embarking on an incredible ad
 prediction = predictWithsummary_TreeClassifier_Predict(fileName_Model,summary)
 
 print("Pour le résumé :", summary,", le genre prédit est :", prediction)
-
 """
 
 
+#########################################################################################################################################
+#########################################################################################################################################
+
+
+def predictWithSummary_NN_Model (fileName: str) -> None:
+    """
+    Cette fonction renvoie la prediction du genre littéraire en fonction d'un résumé
+    
+    Parameters
+    ----------
+        fileName : str
+            nom du fichier
+    
+    Returns
+    -------
+        None
+    """
+    
+    # Charger le fichier csv
+    df = pandas.read_csv(fileName)
+    
+    # Séparer les données en données d'entraînement et de test
+    X_train, X_test, y_train, y_test = train_test_split(df['summary'], df['genre'], test_size=0.2, random_state=42)
+    
+    # Convertir les résumés en vecteurs de nombres
+    tokenizer = Tokenizer(num_words=5000)
+    tokenizer.fit_on_texts(X_train)
+    
+    X_train = tokenizer.texts_to_matrix(X_train, mode='tfidf')
+    X_test = tokenizer.texts_to_matrix(X_test, mode='tfidf')
+    
+    # Convertir les étiquettes de catégorie en vecteurs binaires
+    num_classes = y_train.nunique()
+    
+    # Convertir les étiquettes en entiers
+    label_to_int = {"Fantasy": 0, "Science Fiction": 1, "Crime Fiction": 2, "Historical novel" : 3,"Horror" : 4,"Thriller" : 5}
+    y_train = y_train.map(label_to_int)
+    y_test = y_test.map(label_to_int)
+    
+    # Convertir les étiquettes en vecteurs binaires
+    y_train = to_categorical(y_train, num_classes)
+    y_test = to_categorical(y_test, num_classes)
+    
+    
+    # Définir le modèle
+    model = Sequential()
+    model.add(Dense(512, input_shape=(5000,), activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(6, activation='softmax'))
+    
+    # Compiler le modèle
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
+    # Entraîner le modèle
+    model.fit(X_train, y_train, epochs=30, batch_size=32, validation_data=(X_test, y_test))
+    
+    nombreJuste = 0
+    nombreFaux = 0
+    predictionList = []
+    
+    for i in range (len(X_test)):
+    
+        # Prédiction du genre du livre
+        predicted_genre = model.predict(X_test[i].reshape(1, 5000), verbose=0)
+        prediction = predicted_genre[0].argmax()
+        predictionList.append(prediction)
+    
+        if (prediction == y_test[i].argmax()) :
+            nombreJuste = nombreJuste + 1
+        else :
+            nombreFaux = nombreFaux + 1
+
+        
+    y_test = np.argmax(y_test, axis=1)
+
+    taux_Forest = ((nombreJuste)/(nombreJuste+nombreFaux))*100
+    mat_Forest = ConfusionMatrixDisplay(confusion_matrix(list(y_test),predictionList))
+    mat_Forest.plot()
+    plt.show()
+    print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
+    print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
+    
+    joblib.dump(model, "Model/predictWithSummary_NN")
+    
+    return()
+
+
+def predictWithSummary_NN_Predict (fileNameModel : str, fileNameDonnes : str, summary : str) -> str :
+    """
+    Cette fonction renvoie la prediction du genre littéraire en fonction d'un titre
+    
+    Parameters
+    ----------
+        summary : str
+            résumé
+        fileNameModel : str
+            nom du fichier model avec son chemin
+        fileNameDonnees : str
+            nom du fichier données avec son chemin
+    
+    Returns
+    ------- 
+        genre : str
+            prediction du genre
+    """
+    
+    model = joblib.load(fileNameModel)
+    # Charger le fichier csv
+    df = pandas.read_csv(fileNameDonnees)
+    
+    # Convertir le résumé en vecteur de nombres
+    tokenizer = Tokenizer(num_words=5000)
+    tokenizer.fit_on_texts(df['summary'])
+    summary = tokenizer.texts_to_matrix([summary], mode='tfidf')
+    
+    # Prédire les probabilités du résumé appartenant à chacune des six classes
+    proba = model.predict(summary, verbose=0)
+    
+    # Trouver la classe ayant la plus haute probabilité
+    predicted_class = proba.argmax(axis=-1)
+    
+    if (predicted_class==0):
+        prediction = "Fantasy"
+    elif (predicted_class==1):
+        prediction = "Science Fiction"
+    elif (predicted_class==2):
+        prediction = "Crime Fiction"
+    elif (predicted_class==3):
+        prediction = "Historical novel"
+    elif (predicted_class==4):
+        prediction = "Horror" 
+    else :
+        prediction = "Thriller"
+
+    return(prediction)
+
+
+##test de la prediction du genre NN
+
+summary = "The book tells the story of two friends embarking on an incredible adventure."
+fileNameModel = "Model/predictWithSummary_NN"
+fileNameDonnees = "Données/BooksDataSet.csv"
+
+predictWithSummary_NN_Model('Données/BooksDataSet.csv')
+prediction = predictWithSummary_NN_Predict(fileNameModel,fileNameDonnees,summary)
+
+print("le genre prédit pour le résumé :", summary,"est :", prediction)
 
 
 
@@ -529,7 +689,7 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
     listGenre = lectureFichier['genre']
     
     tailleData = len(listNameBook)
-    tailleTrain = int((20*tailleData)/100)
+    tailleTrain = int((80*tailleData)/100)
     
     listNameBook_train = listNameBook[:tailleTrain]
     listGenre_train = listGenre[:tailleTrain]
@@ -599,8 +759,8 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
     
-    joblib.dump(clf, "app/Model/predictWithTitle_TreeClassifier")
-    joblib.dump(vectorizer, "app/Model/predictWithTitle_vectorizer.joblib")
+    joblib.dump(clf, "Model/predictWithTitle_TreeClassifier")
+    joblib.dump(vectorizer, "Model/predictWithTitle_vectorizer.joblib")
     
     return()
 
@@ -643,14 +803,169 @@ book_title = 'The Kill Artist'
 fileName_Data = "Données/BooksDataSet.csv"
 fileName_Model = "Model/predictWithTitle_TreeClassifier"
 
-#predictWithTitle_TreeClassifier_Model(fileName_Data)
+predictWithTitle_TreeClassifier_Model(fileName_Data)
 prediction = predictWithTitle_TreeClassifier_Predict(fileName_Model,book_title)
 
 print("Pour le livre :", book_title,", le genre prédit est :", prediction)
-
 """
 
+#########################################################################################################################################
+#########################################################################################################################################
 
+
+def predictWithTitle_NN_Model (fileName: str) -> None:
+    """
+    Cette fonction renvoie la prediction du genre littéraire en fonction d'un titre
+    
+    Parameters
+    ----------
+        fileName : str
+            nom du fichier
+    
+    Returns
+    -------
+        None
+    """
+    
+    # Charger le fichier csv
+    df = pandas.read_csv(fileName)
+    
+    # Séparer les données en données d'entraînement et de test
+    X_train, X_test, y_train, y_test = train_test_split(df['book_name'], df['genre'], test_size=0.2, random_state=42)
+    
+    # Convertir les résumés en vecteurs de nombres
+    tokenizer = Tokenizer(num_words=5000)
+    tokenizer.fit_on_texts(X_train)
+    
+    X_train = tokenizer.texts_to_matrix(X_train, mode='tfidf')
+    X_test = tokenizer.texts_to_matrix(X_test, mode='tfidf')
+    
+    # Convertir les étiquettes de catégorie en vecteurs binaires
+    num_classes = y_train.nunique()
+    
+    # Convertir les étiquettes en entiers
+    label_to_int = {"Fantasy": 0, "Science Fiction": 1, "Crime Fiction": 2, "Historical novel" : 3,"Horror" : 4,"Thriller" : 5}
+    y_train = y_train.map(label_to_int)
+    y_test = y_test.map(label_to_int)
+    
+    # Convertir les étiquettes en vecteurs binaires
+    y_train = to_categorical(y_train, num_classes)
+    y_test = to_categorical(y_test, num_classes)
+    
+    
+    # Définir le modèle
+    model = Sequential()
+    model.add(Dense(512, input_shape=(5000,), activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(6, activation='softmax'))
+    
+    # Compiler le modèle
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
+    # Entraîner le modèle
+    model.fit(X_train, y_train, epochs=25, batch_size=32, validation_data=(X_test, y_test))
+    
+    nombreJuste = 0
+    nombreFaux = 0
+    predictionList = []
+    
+    for i in range (len(X_test)):
+    
+        # Prédiction du genre du livre
+        predicted_genre = model.predict(X_test[i].reshape(1, 5000), verbose=0)
+        prediction = predicted_genre[0].argmax()
+        predictionList.append(prediction)
+    
+        if (prediction == y_test[i].argmax()) :
+            nombreJuste = nombreJuste + 1
+        else :
+            nombreFaux = nombreFaux + 1
+
+        
+    y_test = np.argmax(y_test, axis=1)
+
+    taux_Forest = ((nombreJuste)/(nombreJuste+nombreFaux))*100
+    mat_Forest = ConfusionMatrixDisplay(confusion_matrix(list(y_test),predictionList))
+    mat_Forest.plot()
+    plt.show()
+    print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
+    print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
+    
+    joblib.dump(model, "Model/predictWithTitle_NN")
+    
+    return()
+
+
+def predictWithTitle_NN_Predict (fileNameModel : str, fileNameDonnes : str, title : str) -> str :
+    """
+    Cette fonction renvoie la prediction du genre littéraire en fonction d'un titre
+    
+    Parameters
+    ----------
+        title : str
+            Titre
+        fileNameModel : str
+            nom du fichier model avec son chemin
+        fileNameDonnees : str
+            nom du fichier données avec son chemin
+    
+    Returns
+    ------- 
+        genre : str
+            prediction du genre
+    """
+    
+    model = joblib.load(fileNameModel)
+    # Charger le fichier csv
+    df = pandas.read_csv(fileNameDonnees)
+    
+    # Convertir le résumé en vecteur de nombres
+    tokenizer = Tokenizer(num_words=5000)
+    tokenizer.fit_on_texts(df['book_name'])
+    title = tokenizer.texts_to_matrix([title], mode='tfidf')
+    
+    # Prédire les probabilités du résumé appartenant à chacune des six classes
+    proba = model.predict(title, verbose=0)
+    
+    # Trouver la classe ayant la plus haute probabilité
+    predicted_class = proba.argmax(axis=-1)
+    
+    if (predicted_class==0):
+        prediction = "Fantasy"
+    elif (predicted_class==1):
+        prediction = "Science Fiction"
+    elif (predicted_class==2):
+        prediction = "Crime Fiction"
+    elif (predicted_class==3):
+        prediction = "Historical novel"
+    elif (predicted_class==4):
+        prediction = "Horror" 
+    else :
+        prediction = "Thriller"
+
+    return(prediction)
+
+"""
+##test de la prediction du genre NN
+
+predictWithTitle_NN_Model('Données/BooksDataSet.csv')
+
+title = "The Kill Artist"
+fileNameModel = "Model/predictWithTitle_NN"
+fileNameDonnees = "Données/BooksDataSet.csv"
+
+prediction = predictWithTitle_NN_Predict(fileNameModel,fileNameDonnees,title)
+
+print("Le genre prédit pour le titre :", title,"est :", prediction)
+"""
 
 
 
@@ -692,9 +1007,9 @@ def predictWithAuthor(author: str, nameFile : str) -> list:
 author = 'Stephen King'
 nomFichier = 'Données/Author_generes.csv'
 
-print(predictWithAuthor(author,nomFichier))
-
+print("Les romans déjà écrit par", author,"sont :",predictWithAuthor(author,nomFichier))
 """
+
 
 
 #########################################################################################################################################
@@ -739,11 +1054,11 @@ def predictTitle(summary):
     return (title)
 
 
-
+"""
 ## Test de predictTitle
 
 summary = "The story follows a man named Winston Smith, who works for the government and begins to rebel against its oppressive rule. As he becomes involved in a forbidden love affair and joins a secret resistance movement, Winston must navigate the dangerous world of surveillance and propaganda to fight for his freedom and individuality."
 predicted_title = predictTitle(summary)
 
-print("Le titre prédit est :",predicted_title)
-
+print("Le titre prédit pour le résumé :",summary," est :",predicted_title)
+"""
