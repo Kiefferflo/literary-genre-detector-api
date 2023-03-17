@@ -12,15 +12,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/predict/summary")
-async def predictFromSummary(summary: str):
+fileName_Data = "app/Données/BooksDataSet.csv"
+
+@app.post("/api/predict/summary/tree")
+async def predictFromSummaryTree(summary: str):
     fileName_Model = "app/Model/predictWithSummary_TreeClassifier"
     return predictWithsummary_TreeClassifier_Predict(fileName_Model,summary)
 
-@app.post("/api/train/summary")
-async def predictFromSummary():
-    fileName_Data = "app/Données/BooksDataSet.csv"
+@app.post("/api/train/summary/tree")
+async def predictFromSummaryTree():
     predictWithSummary_TreeClassifier_Model(fileName_Data)
+    return "Success"
+
+@app.post("/api/predict/summary/tree")
+async def predictFromSummaryNN(summary: str):
+    fileName_Model = "app/Model/predictWithSummary_TreeClassifier"
+    return predictWithSummary_NN_Predict(fileName_Model, fileName_Data, summary)
+
+@app.post("/api/train/summary/tree")
+async def predictFromSummaryNN():
+    predictWithSummary_NN_Model(fileName_Data)
     return "Success"
 
 @app.post("/api/predict/title")
@@ -30,7 +41,6 @@ async def predictFromTitle(title: str):
 
 @app.post("/api/train/title")
 async def predictFromTitle():
-    fileName_Data = "app/Données/BooksDataSet.csv"
     predictWithTitle_TreeClassifier_Model(fileName_Data)
     return "Success"
 
