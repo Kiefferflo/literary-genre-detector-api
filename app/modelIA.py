@@ -620,7 +620,7 @@ def predictWithSummary_NN_Predict (fileNameModel : str, fileNameDonnes : str, su
     
     model = joblib.load(fileNameModel)
     # Charger le fichier csv
-    df = pandas.read_csv(fileNameDonnees)
+    df = pandas.read_csv(fileNameDonnes)
     
     # Convertir le résumé en vecteur de nombres
     tokenizer = Tokenizer(num_words=5000)
@@ -649,16 +649,16 @@ def predictWithSummary_NN_Predict (fileNameModel : str, fileNameDonnes : str, su
     return(prediction)
 
 
-##test de la prediction du genre NN
+# ##test de la prediction du genre NN
 
-summary = "The book tells the story of two friends embarking on an incredible adventure."
-fileNameModel = "Model/predictWithSummary_NN"
-fileNameDonnees = "Données/BooksDataSet.csv"
+# summary = "The book tells the story of two friends embarking on an incredible adventure."
+# fileNameModel = "Model/predictWithSummary_NN"
+# fileNameDonnees = "Données/BooksDataSet.csv"
 
-predictWithSummary_NN_Model('Données/BooksDataSet.csv')
-prediction = predictWithSummary_NN_Predict(fileNameModel,fileNameDonnees,summary)
+# predictWithSummary_NN_Model('Données/BooksDataSet.csv')
+# prediction = predictWithSummary_NN_Predict(fileNameModel,fileNameDonnees,summary)
 
-print("le genre prédit pour le résumé :", summary,"est :", prediction)
+# print("le genre prédit pour le résumé :", summary,"est :", prediction)
 
 
 
@@ -925,7 +925,7 @@ def predictWithTitle_NN_Predict (fileNameModel : str, fileNameDonnes : str, titl
     
     model = joblib.load(fileNameModel)
     # Charger le fichier csv
-    df = pandas.read_csv(fileNameDonnees)
+    df = pandas.read_csv(fileNameDonnes)
     
     # Convertir le résumé en vecteur de nombres
     tokenizer = Tokenizer(num_words=5000)
