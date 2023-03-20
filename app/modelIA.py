@@ -899,7 +899,7 @@ def predictWithTitle_NN_Model (fileName: str) -> None:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(model, "Model/predictWithTitle_NN")
+    joblib.dump(model, "app/Model/predictWithTitle_NN")
     
     return()
 
