@@ -24,12 +24,12 @@ async def predictFromSummaryTree():
     predictWithSummary_TreeClassifier_Model(fileName_Data)
     return "Success"
 
-@app.post("/api/predict/summary/tree")
+@app.post("/api/predict/summary/nn")
 async def predictFromSummaryNN(summary: str):
-    fileName_Model = "app/Model/predictWithSummary_TreeClassifier"
+    fileName_Model = "app/Model/predictWithSummary_NN"
     return predictWithSummary_NN_Predict(fileName_Model, fileName_Data, summary)
 
-@app.post("/api/train/summary/tree")
+@app.post("/api/train/summary/nn")
 async def predictFromSummaryNN():
     predictWithSummary_NN_Model(fileName_Data)
     return "Success"

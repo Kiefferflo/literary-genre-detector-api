@@ -478,7 +478,7 @@ def predictWithsummary_TreeClassifier_Predict (fileName : str, title : str) -> s
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('Model/predictWithSummary_vectorizer.joblib')
+    vectorizer = joblib.load('app/Model/predictWithSummary_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -594,7 +594,7 @@ def predictWithSummary_NN_Model (fileName: str) -> None:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(model, "Model/predictWithSummary_NN")
+    joblib.dump(model, "app/Model/predictWithSummary_NN")
     
     return()
 
@@ -759,8 +759,8 @@ def predictWithTitle_TreeClassifier_Model (fileName : str) -> None :
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
     
-    joblib.dump(clf, "Model/predictWithTitle_TreeClassifier")
-    joblib.dump(vectorizer, "Model/predictWithTitle_vectorizer.joblib")
+    joblib.dump(clf, "app/Model/predictWithTitle_TreeClassifier")
+    joblib.dump(vectorizer, "app/Model/predictWithTitle_vectorizer.joblib")
     
     return()
 
@@ -785,7 +785,7 @@ def predictWithTitle_TreeClassifier_Predict (fileName : str, title : str) -> str
     clf = joblib.load(fileName)
         
     # Vectorisation du titre à prédire
-    vectorizer = joblib.load('Model/predictWithTitle_vectorizer.joblib')
+    vectorizer = joblib.load('app/Model/predictWithTitle_vectorizer.joblib')
     
     book_feature = vectorizer.transform([title])
 
@@ -899,7 +899,7 @@ def predictWithTitle_NN_Model (fileName: str) -> None:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(model, "Model/predictWithTitle_NN")
+    joblib.dump(model, "app/Model/predictWithTitle_NN")
     
     return()
 
@@ -1030,7 +1030,7 @@ def predictTitle(summary):
         Title : str
             prédiction du titre
     """
-    data = pandas.read_csv('Données/BooksDataSet.csv')
+    data = pandas.read_csv('app/Données/BooksDataSet.csv')
     
     # Vectoriser les résumés de livres en utilisant la méthode TF-IDF
     vectorizer = TfidfVectorizer(stop_words='english')
