@@ -648,18 +648,18 @@ def predictWithSummary_NN_Predict (fileNameModel : str, fileNameDonnes : str, su
 
     return(prediction)
 
-
+"""
 # ##test de la prediction du genre NN
 
-# summary = "The book tells the story of two friends embarking on an incredible adventure."
-# fileNameModel = "Model/predictWithSummary_NN"
-# fileNameDonnees = "Données/BooksDataSet.csv"
+summary = "The book tells the story of two friends embarking on an incredible adventure."
+fileNameModel = "Model/predictWithSummary_NN"
+fileNameDonnees = "Données/BooksDataSet.csv"
 
-# predictWithSummary_NN_Model('Données/BooksDataSet.csv')
+predictWithSummary_NN_Model('Données/BooksDataSet.csv')
 # prediction = predictWithSummary_NN_Predict(fileNameModel,fileNameDonnees,summary)
 
 # print("le genre prédit pour le résumé :", summary,"est :", prediction)
-
+"""
 
 
 
@@ -899,7 +899,7 @@ def predictWithTitle_NN_Model (fileName: str) -> None:
     print("On peut voir que ",nombreJuste, "ont été bien prédit contre ",nombreFaux,"mal prédit")
     print("Le taux d'accuracy est de ", round(taux_Forest,2),"%")
     
-    joblib.dump(model, "app/Model/predictWithTitle_NN")
+    joblib.dump(model, "Model/predictWithTitle_NN")
     
     return()
 
