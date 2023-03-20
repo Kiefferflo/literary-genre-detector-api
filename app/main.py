@@ -34,15 +34,26 @@ async def predictFromSummaryNN():
     predictWithSummary_NN_Model(fileName_Data)
     return "Success"
 
-@app.post("/api/predict/title")
-async def predictFromTitle(title: str):
+@app.post("/api/predict/title/tree")
+async def predictFromTitleTree(title: str):
     fileName_Model = "app/Model/predictWithTitle_TreeClassifier"
     return predictWithTitle_TreeClassifier_Predict(fileName_Model,title)
 
-@app.post("/api/train/title")
-async def predictFromTitle():
+@app.post("/api/train/title/tree")
+async def predictFromTitleTree():
     predictWithTitle_TreeClassifier_Model(fileName_Data)
     return "Success"
+
+@app.post("/api/predict/title/nn")
+async def predictFromTitleNN(title: str):
+    fileName_Model = "app/Model/predictWithTitle_NN"
+    return predictWithTitle_NN_Predict(fileName_Model, fileName_Data,title)
+
+@app.post("/api/train/title/nn")
+async def predictFromTitleNN():
+    predictWithTitle_NN_Model(fileName_Data)
+    return "Success"
+
 
 @app.post("/api/predict/author")
 async def predictFromAuthor(author: str):
