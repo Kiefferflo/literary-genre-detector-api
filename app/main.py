@@ -54,6 +54,9 @@ async def predictFromTitleNN():
     predictWithTitle_NN_Model(fileName_Data)
     return "Success"
 
+@app.post("/api/generate/title/summary")
+async def generateTitleFromSummary(summary: str):
+    return predictTitle(summary)
 
 @app.post("/api/predict/author")
 async def predictFromAuthor(author: str):
